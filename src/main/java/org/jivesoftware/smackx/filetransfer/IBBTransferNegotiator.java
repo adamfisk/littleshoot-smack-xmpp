@@ -29,6 +29,8 @@ import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smackx.packet.IBBExtensions;
 import org.jivesoftware.smackx.packet.IBBExtensions.Open;
 import org.jivesoftware.smackx.packet.StreamInitiation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,6 +47,7 @@ import java.io.OutputStream;
  */
 public class IBBTransferNegotiator extends StreamNegotiator {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
     protected static final String NAMESPACE = "http://jabber.org/protocol/ibb";
 
     public static final int DEFAULT_BLOCK_SIZE = 4096;
@@ -320,24 +323,36 @@ public class IBBTransferNegotiator extends StreamNegotiator {
         }
 
         private boolean loadBufferWait() throws IOException {
-            IBBExtensions.Data data;
+            IBBExtensions.Data data = null;
 
             Message mess = null;
-            while (mess == null) {
+            while (mess == null || data == null) {
+                Message tempMessage = null;
                 if (isDone) {
-                    mess = (Message) dataCollector.pollResult();
-                    if (mess == null) {
+                    tempMessage = (Message) dataCollector.pollResult();
+                    if (tempMessage == null) {
                         return false;
                     }
                 }
                 else {
-                    mess = (Message) dataCollector.nextResult(1000);
+                    tempMessage = (Message) dataCollector.nextResult(1000);
+                }
+                if (tempMessage != null) {
+                    IBBExtensions.Data tempData = 
+                        (IBBExtensions.Data) tempMessage.getExtension(
+                            IBBExtensions.Data.ELEMENT_NAME,
+                            IBBExtensions.NAMESPACE);
+                    if (tempData != null) {
+                        mess = tempMessage;
+                        data = tempData;
+                    }
+                    else {
+                        log.info("Received a non-data message: {}",tempMessage);
+                    }
                 }
             }
             lastMess = mess;
-            data = (IBBExtensions.Data) mess.getExtension(
-                    IBBExtensions.Data.ELEMENT_NAME,
-                    IBBExtensions.NAMESPACE);
+            mess.deleteProperty("test");
 
             checkSequence(mess, (int) data.getSeq());
             buffer = StringUtils.decodeBase64(data.getData());
