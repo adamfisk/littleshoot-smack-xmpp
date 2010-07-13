@@ -27,6 +27,25 @@
         <system>JIRA</system>
     </issueManagement>
 
+    <distributionManagement>
+        <repository>
+            <id>littleshoot</id>
+            <url>scpexe://dev.littleshoot.org/var/maven</url>
+        </repository>
+        <snapshotRepository>
+            <id>littleshoot</id>
+            <url>scpexe://dev.littleshoot.org/var/maven-snapshots</url>
+        </snapshotRepository>
+
+    </distributionManagement>
+
+    <scm>
+        <connection>scm:svn:https://svn.littleshoot.org/svn/smack</connection>
+        <developerConnection>scm:svn:https://svn.littleshoot.org/svn/smack</developerConnection>
+        <tag>HEAD</tag>
+        <url>http://svn.littleshoot.org</url>
+    </scm>
+
     <dependencies>
 
         <dependency>
@@ -40,6 +59,12 @@
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>1.2.14</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jcraft</groupId>
+            <artifactId>jzlib</artifactId>
+            <version>1.0.7</version>
         </dependency>
 
         <dependency>
