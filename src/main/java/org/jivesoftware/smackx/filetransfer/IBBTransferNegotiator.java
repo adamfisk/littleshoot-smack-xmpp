@@ -27,6 +27,7 @@ import org.jivesoftware.smack.packet.Message;
 import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smackx.packet.IBBExtensions;
+import org.jivesoftware.smackx.packet.IBBExtensions.Data;
 import org.jivesoftware.smackx.packet.IBBExtensions.Open;
 import org.jivesoftware.smackx.packet.StreamInitiation;
 import org.slf4j.Logger;
@@ -35,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The in-band bytestream file transfer method, or IBB for short, transfers the
@@ -150,7 +153,7 @@ public class IBBTransferNegotiator extends StreamNegotiator {
 
         protected int count = 0;
 
-        protected int seq = 0;
+        protected long outputStreamSeq = 0;
 
         final String userID;
 
@@ -214,26 +217,26 @@ public class IBBTransferNegotiator extends StreamNegotiator {
         }
 
         private synchronized void writeToXML(byte[] buffer, int offset, int len) {
-            Message template = createTemplate(messageID + "_" + seq);
+            Message template = createTemplate(messageID + "_" + outputStreamSeq);
             IBBExtensions.Data ext = new IBBExtensions.Data(sid);
             template.addExtension(ext);
 
             String enc = StringUtils.encodeBase64(buffer, offset, len, false);
 
             ext.setData(enc);
-            ext.setSeq(seq);
-            synchronized (this) {
-                try {
-                    this.wait(100);
-                }
-                catch (InterruptedException e) {
-                    /* Do Nothing */
-                }
+            ext.setSeq(outputStreamSeq);
+            
+            // We already hold the lock on "this".
+            try {
+                this.wait(100);
+            }
+            catch (InterruptedException e) {
+                /* Do Nothing */
             }
 
             connection.sendPacket(template);
 
-            seq = (seq + 1 == 65535 ? 0 : seq + 1);
+            outputStreamSeq = (outputStreamSeq + 1 == 65535 ? 0 : outputStreamSeq + 1);
         }
 
         public void close() throws IOException {
@@ -266,7 +269,7 @@ public class IBBTransferNegotiator extends StreamNegotiator {
 
         private int bufferPointer;
 
-        private int seq = -1;
+        private long inputStreamSeq = -1;
 
         private boolean isDone;
 
@@ -302,7 +305,7 @@ public class IBBTransferNegotiator extends StreamNegotiator {
         }
 
         public synchronized int read(byte[] b, int off, int len)
-                throws IOException {
+            throws IOException {
             if (isEOF || isClosed) {
                 return -1;
             }
@@ -323,55 +326,74 @@ public class IBBTransferNegotiator extends StreamNegotiator {
         }
 
         private boolean loadBufferWait() throws IOException {
+            if (this.inputStreamSeq == 65535) {
+                log.warn("MAX SEQUENCE NUMBER??");
+                this.inputStreamSeq = -1;
+            }
             IBBExtensions.Data data = null;
-
             Message mess = null;
-            while (mess == null || data == null) {
-                Message tempMessage = null;
-                if (isDone) {
-                    tempMessage = (Message) dataCollector.pollResult();
-                    if (tempMessage == null) {
-                        return false;
-                    }
-                }
-                else {
-                    tempMessage = (Message) dataCollector.nextResult(1000);
-                }
-                if (tempMessage != null) {
-                    IBBExtensions.Data tempData = 
-                        (IBBExtensions.Data) tempMessage.getExtension(
-                            IBBExtensions.Data.ELEMENT_NAME,
-                            IBBExtensions.NAMESPACE);
-                    if (tempData != null) {
-                        mess = tempMessage;
-                        data = tempData;
+            if (outOfSequenceMessages.containsKey(this.inputStreamSeq + 1)) {
+                mess = outOfSequenceMessages.remove(this.inputStreamSeq + 1);
+                data = (IBBExtensions.Data) mess.getExtension(
+                    IBBExtensions.Data.ELEMENT_NAME,
+                    IBBExtensions.NAMESPACE);
+                log.info("USING MAPPED SEQUENCE NUMBER: "+this.inputStreamSeq);
+            }
+            else {
+                while (mess == null || data == null) {
+                    final Message tempMessage;
+                    if (isDone) {
+                        tempMessage = (Message) dataCollector.pollResult();
+                        if (tempMessage == null) {
+                            return false;
+                        }
                     }
                     else {
-                        log.info("Received a non-data message: {}",tempMessage);
+                        tempMessage = (Message) dataCollector.nextResult(1000);
+                    }
+                    if (tempMessage != null) {
+                        final IBBExtensions.Data tempData = 
+                            (IBBExtensions.Data) tempMessage.getExtension(
+                                IBBExtensions.Data.ELEMENT_NAME,
+                                IBBExtensions.NAMESPACE);
+                        if (tempData != null) {
+                            mess = tempMessage;
+                            data = tempData;
+                        }
+                        else {
+                            log.info("Received a non-data message: {}",tempMessage);
+                        }
                     }
                 }
             }
-            lastMess = mess;
-            mess.deleteProperty("test");
 
-            checkSequence(mess, (int) data.getSeq());
+            final long seq = data.getSeq();
+
+            final Message toUse;
+            if (seq - 1 == this.inputStreamSeq) {
+                toUse = mess;
+            }
+            else {
+                log.info("ADDING OUT OF ORDER SEQUENCE NUMBER: "+seq);
+                outOfSequenceMessages.put(seq, mess);
+                if (outOfSequenceMessages.size() > 1000) {
+                    outOfSequenceMessages.clear();
+                    final String msg = "Received max out of sequence msgs";
+                    log.info(msg);
+                    throw new IOException(msg);
+                }
+                return loadBufferWait();
+            }
+            
+            this.inputStreamSeq = seq;
+            lastMess = toUse;
             buffer = StringUtils.decodeBase64(data.getData());
             bufferPointer = 0;
             return true;
         }
-
-        private void checkSequence(Message mess, int seq) throws IOException {
-            if (this.seq == 65535) {
-                this.seq = -1;
-            }
-            if (seq - 1 != this.seq) {
-                cancelTransfer(mess);
-                throw new IOException("Packets out of sequence");
-            }
-            else {
-                this.seq = seq;
-            }
-        }
+        
+        private Map<Long, Message> outOfSequenceMessages = 
+            new HashMap<Long, Message>();
 
         private void cancelTransfer(Message mess) {
             cleanup();
