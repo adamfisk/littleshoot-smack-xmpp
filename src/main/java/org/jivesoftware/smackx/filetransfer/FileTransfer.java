@@ -60,7 +60,7 @@ public abstract class FileTransfer {
      * Buffer size between input and output
      */
     private static final int BUFFER_SIZE = 8192;
-
+    
     protected FileTransfer(String peer, String streamID,
 			FileTransferNegotiator negotiator) {
 		this.peer = peer;
@@ -149,7 +149,7 @@ public abstract class FileTransfer {
 		return status;
 	}
 
-	protected void setError(Error type) {
+	public void setError(Error type) {
 		this.error = type;
 	}
 
@@ -188,7 +188,7 @@ public abstract class FileTransfer {
 		this.exception = exception;
 	}
 
-	protected void setStatus(Status status) {
+	public void setStatus(Status status) {
         synchronized (statusMonitor) {
 		    this.status = status;
 	    }

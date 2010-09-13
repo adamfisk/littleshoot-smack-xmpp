@@ -34,7 +34,7 @@
         </repository>
         <snapshotRepository>
             <id>littleshoot</id>
-            <url>scpexe://dev.littleshoot.org/var/maven-snapshots</url>
+            <url>scpexe://dev.littleshoot.org/var/maven</url>
         </snapshotRepository>
 
     </distributionManagement>

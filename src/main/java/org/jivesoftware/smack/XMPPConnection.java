@@ -37,6 +37,7 @@ import javax.security.auth.callback.PasswordCallback;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.KeyStore;
@@ -391,6 +392,7 @@ public class XMPPConnection {
         if (configuration.isSASLAuthenticationEnabled() &&
                 saslAuthentication.hasNonAnonymousAuthentication()) {
             // Authenticate using SASL
+            System.out.println("USING SASL");
             if (password != null) {
                 response = saslAuthentication.authenticate(username, password, resource);
             }
@@ -401,11 +403,13 @@ public class XMPPConnection {
         }
         else {
             // Authenticate using Non-SASL
+            System.out.println("NOT USING SASL");
             response = new NonSASLAuthentication(this).authenticate(username, password, resource);
         }
 
         // Set the user.
         if (response != null) {
+            System.out.println("SETTING USER TO RESPONSE: "+response);
             this.user = response;
             // Update the serviceName with the one returned by the server
             this.serviceName = StringUtils.parseServer(response);

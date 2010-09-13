@@ -311,6 +311,7 @@ public class OutgoingFileTransfer extends FileTransfer {
 				}
 
 		}, "File Transfer " + streamID);
+		transferThread.setDaemon(true);
 		transferThread.start();
 	}
 
@@ -393,7 +394,7 @@ public class OutgoingFileTransfer extends FileTransfer {
     }
 
     @Override
-    protected void setStatus(Status status) {
+    public void setStatus(Status status) {
         Status oldStatus = getStatus();
         super.setStatus(status);
         if(callback != null) {
