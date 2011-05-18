@@ -65,7 +65,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jcraft</groupId>
+            <groupId>com.jcraft</groupId>
             <artifactId>jzlib</artifactId>
             <version>1.0.7</version>
         </dependency>
@@ -83,8 +83,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.xmlpull</groupId>
-            <artifactId>xmlpull</artifactId>
+            <groupId>xpp3</groupId>
+            <artifactId>xpp3_min</artifactId>
             <version>1.1.4c</version>
         </dependency>
 
