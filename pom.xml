@@ -47,6 +47,11 @@
     <dependencies>
 
         <dependency>
+            <groupId>org.littleshoot</groupId>
+            <artifactId>dnssec4j</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jzlib</artifactId>
             <version>1.0.7</version>

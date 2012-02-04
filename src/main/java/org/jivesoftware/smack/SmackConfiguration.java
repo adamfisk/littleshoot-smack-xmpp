@@ -49,6 +49,8 @@ public final class SmackConfiguration {
     private static int packetReplyTimeout = 5000;
     private static int keepAliveInterval = 30000;
     private static Vector<String> defaultMechs = new Vector<String>();
+    
+    private static boolean useDnsSec = false;
 
     private SmackConfiguration() {
     }
@@ -229,6 +231,26 @@ public final class SmackConfiguration {
     public static List<String> getSaslMechs() {
         return defaultMechs;
     }
+    
+
+    /**
+     * Sets whether or not to verify the DNSSEC signatures of host names.
+     * 
+     * @param useDnsSec Whether or not to use DNSSEC.
+     */
+    public static void setUseDnsSec(boolean useDnsSec) {
+        SmackConfiguration.useDnsSec = useDnsSec;
+    }
+
+    /**
+     * Returns whether or not to verify the DNSSEC signatures of host names.
+     * 
+     * @return Whether or not to use DNSSEC.
+     */
+    public static boolean isUseDnsSec() {
+        return useDnsSec;
+    }
+    
 
     private static void parseClassToLoad(XmlPullParser parser) throws Exception {
         String className = parser.nextText();
