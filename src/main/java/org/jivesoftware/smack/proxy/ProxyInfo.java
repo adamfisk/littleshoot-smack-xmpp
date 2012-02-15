@@ -114,7 +114,7 @@ public class ProxyInfo
         {
             return null;
         }
-        if (SmackConfiguration.isUseDnsSec()) {
+        if (SmackConfiguration.isDnsSecEnabled()) {
             return new VerifiedSocketFactory(sf);
         } else {
             return sf;

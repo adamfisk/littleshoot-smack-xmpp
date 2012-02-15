@@ -50,7 +50,7 @@ public final class SmackConfiguration {
     private static int keepAliveInterval = 30000;
     private static Vector<String> defaultMechs = new Vector<String>();
     
-    private static boolean useDnsSec = false;
+    private static boolean dnsSecEnabled = false;
 
     private SmackConfiguration() {
     }
@@ -236,10 +236,10 @@ public final class SmackConfiguration {
     /**
      * Sets whether or not to verify the DNSSEC signatures of host names.
      * 
-     * @param useDnsSec Whether or not to use DNSSEC.
+     * @param dnsSecEnabled Whether or not to use DNSSEC.
      */
-    public static void setUseDnsSec(boolean useDnsSec) {
-        SmackConfiguration.useDnsSec = useDnsSec;
+    public static void setDnsSecEnabled(boolean dnsSecEnabled) {
+        SmackConfiguration.dnsSecEnabled = dnsSecEnabled;
     }
 
     /**
@@ -247,8 +247,8 @@ public final class SmackConfiguration {
      * 
      * @return Whether or not to use DNSSEC.
      */
-    public static boolean isUseDnsSec() {
-        return useDnsSec;
+    public static boolean isDnsSecEnabled() {
+        return dnsSecEnabled;
     }
     
 
