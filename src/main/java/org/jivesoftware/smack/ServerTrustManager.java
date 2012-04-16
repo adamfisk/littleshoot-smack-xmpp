@@ -20,17 +20,27 @@
 
 package org.jivesoftware.smack;
 
-import javax.net.ssl.X509TrustManager;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.IOException;
-import java.security.*;
+import java.io.InputStream;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.net.ssl.X509TrustManager;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Trust manager that checks all certificates presented by the server. This class
@@ -41,6 +51,8 @@ import java.util.regex.Pattern;
  * @author Gaston Dombiak
  */
 class ServerTrustManager implements X509TrustManager {
+    
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private static Pattern cnPattern = Pattern.compile("(?i)(cn=)([^,]*)");
 
@@ -52,20 +64,29 @@ class ServerTrustManager implements X509TrustManager {
     private String server;
     private KeyStore trustStore;
 
+    private Certificate gmailCert;
+
     public ServerTrustManager(String server, ConnectionConfiguration configuration) {
         this.configuration = configuration;
         this.server = server;
 
         InputStream in = null;
         try {
+            System.err.println("LOADING TRUST STORE");
             trustStore = KeyStore.getInstance(configuration.getTruststoreType());
             in = new FileInputStream(configuration.getTruststorePath());
             trustStore.load(in, configuration.getTruststorePassword().toCharArray());
+            
+            try {
+                this.gmailCert = this.trustStore.getCertificate("gmail.com");
+            } catch (final KeyStoreException e) {
+                log.error("Could not load gmail cert?");
+            }
         }
         catch (Exception e) {
             e.printStackTrace();
             // Disable root CA checking
-            configuration.setVerifyRootCAEnabled(false);
+            //configuration.setVerifyRootCAEnabled(false);
         }
         finally {
             if (in != null) {
@@ -87,9 +108,75 @@ class ServerTrustManager implements X509TrustManager {
             throws CertificateException {
     }
 
-    public void checkServerTrusted(X509Certificate[] x509Certificates, String arg1)
-            throws CertificateException {
+    /*
+    public static void export(java.security.cert.Certificate cert, File file, boolean binary) {
+        try {
+            // Get the encoded form which is suitable for exporting
+            byte[] buf = cert.getEncoded();
 
+            FileOutputStream os = new FileOutputStream(file);
+            if (binary) {
+                // Write in binary form
+                os.write(buf);
+            } else {
+                // Write in text form
+                Writer wr = new OutputStreamWriter(os, Charset.forName("UTF-8"));
+                wr.write("-----BEGIN CERTIFICATE-----\n");
+                wr.write(new sun.misc.BASE64Encoder().encode(buf));
+                wr.write("\n-----END CERTIFICATE-----\n");
+                wr.flush();
+            }
+            os.close();
+        } catch (CertificateEncodingException e) {
+        } catch (IOException e) {
+        }
+    }
+    */
+    
+    public void checkServerTrusted(X509Certificate[] x509Certificates, 
+        final String authType) throws CertificateException {
+
+        log.info("CHECKING IF SERVER IS TRUSTED");
+        if (x509Certificates == null || x509Certificates.length == 0) {
+            throw new IllegalArgumentException(
+                "null or zero-length certificate chain");
+        }
+        if (authType == null || authType.length() == 0) {
+            throw new IllegalArgumentException(
+                "null or zero-length authentication type");
+        }
+        
+        final X509Certificate cert = x509Certificates[0];
+        final String name = cert.getSubjectX500Principal().getName();
+        if (StringUtils.isBlank(name)) {
+            throw new CertificateException("No name!!");
+        }
+        final String alias = StringUtils.substringBetween(name, "CN=", ",");
+        log.error("CHECKING SERVER CERTIFICATE FOR: " + alias);
+
+        if (this.gmailCert == null) {
+            log.warn("No matching cert for: "+alias);
+            throw new CertificateException("No cert for "+ alias);
+        }
+        if (!this.gmailCert.equals(cert)) {
+            log.info("Certs not equal:\n"+this.gmailCert+"\n and:\n"+cert);
+            throw new CertificateException("Did not recognize cert: "+cert);
+        } 
+        log.info("Certificates matched!");
+
+        
+        
+        /*
+        final X509Certificate cert = x509Certificates[0];
+        final String name = cert.getSubjectX500Principal().getName();
+        
+        System.out.println("NUM CERTS: "+x509Certificates.length);
+        
+        export(cert, new File("saved-cert-0"), true);
+        export(x509Certificates[1], new File("saved-cert-1"), true);
+        
+        //System.out.println("NAME: "+name);
+        //System.out.println("Checking server"+arg1);
         int nSize = x509Certificates.length;
 
         List<String> peerIdentities = getPeerIdentity(x509Certificates[0]);
@@ -104,13 +191,17 @@ class ServerTrustManager implements X509TrustManager {
                 Principal principalIssuer = x509certificate.getIssuerDN();
                 Principal principalSubject = x509certificate.getSubjectDN();
                 if (principalLast != null) {
+                    PublicKey publickey = null;
                     if (principalIssuer.equals(principalLast)) {
                         try {
-                            PublicKey publickey =
+                            publickey =
                                     x509Certificates[i + 1].getPublicKey();
+                            //System.out.println("CERT:\n"+x509Certificates[i].getPublicKey().);
+                            System.out.println("Verifying public key:\n"+new String(publickey.getEncoded()));
                             x509Certificates[i].verify(publickey);
                         }
                         catch (GeneralSecurityException generalsecurityexception) {
+                            log.error("Exception verifying key: "+publickey, generalsecurityexception);
                             throw new CertificateException(
                                     "signature verification failed of " + peerIdentities);
                         }
@@ -123,12 +214,14 @@ class ServerTrustManager implements X509TrustManager {
                 principalLast = principalSubject;
             }
         }
-
+        
+        
         if (configuration.isVerifyRootCAEnabled()) {
             // Verify that the the last certificate in the chain was issued
             // by a third-party that the client trusts.
             boolean trusted = false;
             try {
+                System.out.println("Root cert: "+x509Certificates[nSize - 1]);
                 trusted = trustStore.getCertificateAlias(x509Certificates[nSize - 1]) != null;
                 if (!trusted && nSize == 1 && configuration.isSelfSignedCertificateEnabled())
                 {
@@ -175,7 +268,7 @@ class ServerTrustManager implements X509TrustManager {
                 }
             }
         }
-
+    */
     }
 
     /**
