@@ -23,8 +23,11 @@ package org.jivesoftware.smack;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
+import java.security.Principal;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
@@ -32,6 +35,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -137,6 +141,7 @@ class ServerTrustManager implements X509TrustManager {
         final String authType) throws CertificateException {
 
         log.info("CHECKING IF SERVER IS TRUSTED");
+        /*
         if (x509Certificates == null || x509Certificates.length == 0) {
             throw new IllegalArgumentException(
                 "null or zero-length certificate chain");
@@ -163,17 +168,16 @@ class ServerTrustManager implements X509TrustManager {
             throw new CertificateException("Did not recognize cert: "+cert);
         } 
         log.info("Certificates matched!");
-
+         */
         
         
-        /*
         final X509Certificate cert = x509Certificates[0];
         final String name = cert.getSubjectX500Principal().getName();
         
-        System.out.println("NUM CERTS: "+x509Certificates.length);
+        //System.out.println("NUM CERTS: "+x509Certificates.length);
         
-        export(cert, new File("saved-cert-0"), true);
-        export(x509Certificates[1], new File("saved-cert-1"), true);
+        //export(cert, new File("saved-cert-0"), true);
+        //export(x509Certificates[1], new File("saved-cert-1"), true);
         
         //System.out.println("NAME: "+name);
         //System.out.println("Checking server"+arg1);
@@ -268,7 +272,7 @@ class ServerTrustManager implements X509TrustManager {
                 }
             }
         }
-    */
+    
     }
 
     /**
