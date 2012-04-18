@@ -20,24 +20,19 @@
 
 package org.jivesoftware.smack;
 
-import org.jivesoftware.smack.debugger.SmackDebugger;
-import org.jivesoftware.smack.filter.PacketFilter;
-import org.jivesoftware.smack.packet.Packet;
-import org.jivesoftware.smack.packet.Presence;
-import org.jivesoftware.smack.packet.XMPPError;
-import org.jivesoftware.smack.util.StringUtils;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocket;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.callback.PasswordCallback;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.security.KeyStore;
@@ -47,6 +42,21 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocket;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.PasswordCallback;
+
+import org.jivesoftware.smack.debugger.SmackDebugger;
+import org.jivesoftware.smack.filter.PacketFilter;
+import org.jivesoftware.smack.packet.Packet;
+import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.packet.XMPPError;
+import org.jivesoftware.smack.util.StringUtils;
 
 /**
  * Creates a connection to a XMPP server. A simple use of this API might
@@ -1250,6 +1260,8 @@ public class XMPPConnection {
         context.init(kms,
                 new javax.net.ssl.TrustManager[]{new ServerTrustManager(serviceName, configuration)},
                 new java.security.SecureRandom());
+        //System.err.println("SSL params: "+Arrays.asList(context.getSupportedSSLParameters()));
+        //System.err.println("Providers: "+Arrays.asList(Security.getProviders()));
         Socket plain = socket;
         // Secure the plain connection
         socket = context.getSocketFactory().createSocket(plain,
@@ -1258,8 +1270,53 @@ public class XMPPConnection {
         socket.setKeepAlive(true);
         // Initialize the reader and writer with the new secured version
         initReaderAndWriter();
+        
+        final SSLSocket ssl = (SSLSocket) socket;
+        //System.err.println("SUITES: "+Arrays.asList(ssl.getSupportedCipherSuites()));
+        
+        //System.err.println("ENABLED: "+Arrays.asList(ssl.getEnabledCipherSuites()));
+        final String[] cipherSuites = new String[] {
+            //"TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+            //"TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+            //"TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA",
+            //"TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA",
+            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+            "TLS_DHE_DSS_WITH_AES_256_CBC_SHA",
+            //"TLS_ECDH_RSA_WITH_AES_256_CBC_SHA",
+            //"TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA",
+            //"TLS_RSA_WITH_CAMELLIA_256_CBC_SHA",
+            //"TLS_RSA_WITH_AES_256_CBC_SHA",
+            //"TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
+            //"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+            //"TLS_ECDHE_RSA_WITH_RC4_128_SHA",
+            //"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+            //"TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA",
+            //"TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA",
+            //"TLS_DHE_DSS_WITH_RC4_128_SHA",
+            //"TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+            //"TLS_DHE_DSS_WITH_AES_128_CBC_SHA",
+            //"TLS_ECDH_RSA_WITH_RC4_128_SHA",
+            //"TLS_ECDH_RSA_WITH_AES_128_CBC_SHA",
+            //"TLS_ECDH_ECDSA_WITH_RC4_128_SHA",
+            //"TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA",
+            //"TLS_RSA_WITH_SEED_CBC_SHA",
+            //"TLS_RSA_WITH_CAMELLIA_128_CBC_SHA",
+            //"TLS_RSA_WITH_RC4_128_MD5",
+            //"TLS_RSA_WITH_RC4_128_SHA",
+            //"TLS_RSA_WITH_AES_128_CBC_SHA",
+            //"TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
+            //"TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
+            //"TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
+            //"TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA",
+            //"TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA",
+            //"TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA",
+            //"SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA",
+            //"TLS_RSA_WITH_3DES_EDE_CBC_SHA",
+        };
+        ssl.setEnabledCipherSuites(cipherSuites);
         // Proceed to do the handshake
-        ((SSLSocket) socket).startHandshake();
+        ssl.startHandshake();
+        
         //if (((SSLSocket) socket).getWantClientAuth()) {
         //    System.err.println("Connection wants client auth");
         //}
