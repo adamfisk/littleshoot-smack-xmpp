@@ -82,6 +82,8 @@ public class ConnectionConfiguration implements Cloneable {
 	// Holds the proxy information (such as proxyhost, proxyport, username, password etc)
     private ProxyInfo proxy;
 
+    private String[] cipherSuites;
+
     /**
      * Creates a new ConnectionConfiguration for the specified service name.
      * A DNS SRV lookup will be performed to find out the actual host address
@@ -706,5 +708,13 @@ public class ConnectionConfiguration implements Cloneable {
         this.username = username;
         this.password = password;
         this.resource = resource;
+    }
+
+    public String[] getCipherSuites() {
+        return cipherSuites;
+    }
+
+    public void setCipherSuites(final String[] cipherSuites) {
+        this.cipherSuites = cipherSuites;
     }
 }

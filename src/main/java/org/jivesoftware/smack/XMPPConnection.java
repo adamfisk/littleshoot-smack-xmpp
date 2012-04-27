@@ -1275,45 +1275,7 @@ public class XMPPConnection {
         //System.err.println("SUITES: "+Arrays.asList(ssl.getSupportedCipherSuites()));
         
         //System.err.println("ENABLED: "+Arrays.asList(ssl.getEnabledCipherSuites()));
-        final String[] cipherSuites = new String[] {
-            //"TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
-            //"TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-            //"TLS_DHE_RSA_WITH_CAMELLIA_256_CBC_SHA",
-            //"TLS_DHE_DSS_WITH_CAMELLIA_256_CBC_SHA",
-            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_DHE_DSS_WITH_AES_256_CBC_SHA",
-            //"TLS_ECDH_RSA_WITH_AES_256_CBC_SHA",
-            //"TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA",
-            //"TLS_RSA_WITH_CAMELLIA_256_CBC_SHA",
-            //"TLS_RSA_WITH_AES_256_CBC_SHA",
-            //"TLS_ECDHE_ECDSA_WITH_RC4_128_SHA",
-            //"TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
-            //"TLS_ECDHE_RSA_WITH_RC4_128_SHA",
-            //"TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-            //"TLS_DHE_RSA_WITH_CAMELLIA_128_CBC_SHA",
-            //"TLS_DHE_DSS_WITH_CAMELLIA_128_CBC_SHA",
-            //"TLS_DHE_DSS_WITH_RC4_128_SHA",
-            //"TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
-            //"TLS_DHE_DSS_WITH_AES_128_CBC_SHA",
-            //"TLS_ECDH_RSA_WITH_RC4_128_SHA",
-            //"TLS_ECDH_RSA_WITH_AES_128_CBC_SHA",
-            //"TLS_ECDH_ECDSA_WITH_RC4_128_SHA",
-            //"TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA",
-            //"TLS_RSA_WITH_SEED_CBC_SHA",
-            //"TLS_RSA_WITH_CAMELLIA_128_CBC_SHA",
-            //"TLS_RSA_WITH_RC4_128_MD5",
-            //"TLS_RSA_WITH_RC4_128_SHA",
-            //"TLS_RSA_WITH_AES_128_CBC_SHA",
-            //"TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA",
-            //"TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA",
-            //"TLS_DHE_RSA_WITH_3DES_EDE_CBC_SHA",
-            //"TLS_DHE_DSS_WITH_3DES_EDE_CBC_SHA",
-            //"TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA",
-            //"TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA",
-            //"SSL_RSA_FIPS_WITH_3DES_EDE_CBC_SHA",
-            //"TLS_RSA_WITH_3DES_EDE_CBC_SHA",
-        };
-        ssl.setEnabledCipherSuites(cipherSuites);
+        ssl.setEnabledCipherSuites(configuration.getCipherSuites());
         // Proceed to do the handshake
         ssl.startHandshake();
         
