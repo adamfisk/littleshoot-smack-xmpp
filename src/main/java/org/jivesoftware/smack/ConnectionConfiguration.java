@@ -82,10 +82,7 @@ public class ConnectionConfiguration implements Cloneable {
 	// Holds the proxy information (such as proxyhost, proxyport, username, password etc)
     private ProxyInfo proxy;
 
-    private String[] cipherSuites = {
-        "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
-        "TLS_DHE_DSS_WITH_AES_256_CBC_SHA"
-    };
+    private String[] cipherSuites = {};
 
     /**
      * Creates a new ConnectionConfiguration for the specified service name.

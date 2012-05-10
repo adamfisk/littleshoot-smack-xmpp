@@ -35,10 +35,19 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.Provider;
 import java.security.Security;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1190,10 +1199,18 @@ public class XMPPConnection {
      * The server has indicated that TLS negotiation can start. We now need to secure the
      * existing plain connection and perform a handshake. This method won't return until the
      * connection has finished the handshake or an error occured while securing the connection.
+     * @throws NoSuchProviderException 
+     * @throws KeyStoreException 
+     * @throws IOException 
+     * @throws CertificateException 
+     * @throws NoSuchAlgorithmException 
+     * @throws KeyManagementException 
+     * @throws UnrecoverableKeyException 
+     * @throws XMPPException 
      *
      * @throws Exception if an exception occurs.
      */
-    void proceedTLSReceived() throws Exception {
+    void proceedTLSReceived() throws KeyStoreException, NoSuchProviderException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException, XMPPException  {
         SSLContext context = SSLContext.getInstance("TLS");
         KeyStore ks = null;
         KeyManager[] kms = null;
@@ -1274,8 +1291,16 @@ public class XMPPConnection {
         final SSLSocket ssl = (SSLSocket) socket;
         //System.err.println("SUITES: "+Arrays.asList(ssl.getSupportedCipherSuites()));
         
-        //System.err.println("ENABLED: "+Arrays.asList(ssl.getEnabledCipherSuites()));
-        ssl.setEnabledCipherSuites(configuration.getCipherSuites());
+        final String[] toUse;
+        final String[] standard = ssl.getEnabledCipherSuites();
+        final String[] cs = configuration.getCipherSuites();
+        if (cs != null && cs.length > 0) {
+            toUse = cs;
+        } else {
+            toUse = standard;
+        }
+        System.err.println("ENABLED: "+Arrays.asList(toUse));
+        ssl.setEnabledCipherSuites(toUse);
         // Proceed to do the handshake
         ssl.startHandshake();
         
