@@ -66,6 +66,8 @@ import org.jivesoftware.smack.packet.Packet;
 import org.jivesoftware.smack.packet.Presence;
 import org.jivesoftware.smack.packet.XMPPError;
 import org.jivesoftware.smack.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Creates a connection to a XMPP server. A simple use of this API might
@@ -102,6 +104,8 @@ import org.jivesoftware.smack.util.StringUtils;
  */
 public class XMPPConnection {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     /**
      * Value that indicates whether debugging is enabled. When enabled, a debug
      * window will apear for each new connection that will contain the following
@@ -1299,7 +1303,7 @@ public class XMPPConnection {
         } else {
             toUse = standard;
         }
-        System.err.println("ENABLED: "+Arrays.asList(toUse));
+        log.info("Enabled cipher suites: {}", Arrays.asList(toUse));
         ssl.setEnabledCipherSuites(toUse);
         // Proceed to do the handshake
         ssl.startHandshake();
