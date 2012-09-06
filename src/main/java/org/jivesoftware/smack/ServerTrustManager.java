@@ -175,6 +175,9 @@ class ServerTrustManager implements X509TrustManager {
                 }
             }
         }
+        
+        Date date = new Date();
+        x509Certificates[0].checkValidity(date);
 
     }
 
