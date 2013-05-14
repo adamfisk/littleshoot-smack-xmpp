@@ -3,7 +3,7 @@
     <groupId>org.littleshoot</groupId>
     <artifactId>smack-xmpp</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
     <name>LittleShoot Fork of the Smack XMPP Library</name>
     <url>http://www.littleshoot.org</url>
 
